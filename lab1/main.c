@@ -46,38 +46,34 @@ void report_pnm_error(enum PNMStatus s)
 
 int main(int argc, char **argv)
 {
+	int code = 0;
+	FILE *inp = NULL;
+	FILE *out = NULL;
+	struct PNMImage img = pnm_image();
+
+#define ERRQUIT code = 1; goto cleanup;
+
 	if (argc != 4) {
 		report_usage(argv[0]);
-		return 1;
+		ERRQUIT
 	}
 
 	char op = *argv[3];
 	if (strlen(argv[3]) != 1 || op < '0' || op > '4') {
 		report_usage(argv[0]);
-		return 1;
+		ERRQUIT
 	}
 
-	FILE *inp = fopen(argv[1], "rb");
+	inp = fopen(argv[1], "rb");
 	if (inp == NULL) {
 		report_fopen_error(argv[1]);
-		return 1;
+		ERRQUIT
 	}
-
-	FILE *out = fopen(argv[2], "wb");
-	if (out == NULL) {
-		report_fopen_error(argv[2]);
-		fclose(inp);
-		return 1;
-	}
-
-	int code = 0;
-	struct PNMImage img = pnm_image();
 
 	enum PNMStatus s = read_pnm_image(&img, inp);
 	if (s != PNM_SUCCESS) {
 		report_pnm_error(s);
-		code = 1;
-		goto cleanup;
+		ERRQUIT
 	}
 
 	if (op == INVERSE) {
@@ -90,7 +86,7 @@ int main(int argc, char **argv)
 		mirror_vertical(&img);
 
 	} else {
-		struct PNMImage new;
+		struct PNMImage new = pnm_image();
 
 		if (op == ROTATE_RIGHT)
 			s = rotate_right(&img, &new);
@@ -99,24 +95,32 @@ int main(int argc, char **argv)
 
 		if (s != PNM_SUCCESS) {
 			report_pnm_error(s);
-			code = 1;
-			goto cleanup;
+			ERRQUIT
 		}
 
 		free_pnm_image_data(&img);
 		img = new;
 	}
 
+	out = fopen(argv[2], "wb");
+	if (out == NULL) {
+		report_fopen_error(argv[2]);
+		ERRQUIT
+	}
+
 	s = write_pnm_image(&img, out);
 	if (s != PNM_SUCCESS) {
 		report_pnm_error(s);
-		code = 1;
-		goto cleanup;
+		ERRQUIT
 	}
 
+#undef ERRQUIT
+
 cleanup:
-	fclose(inp);
-	fclose(out);
+	if (inp != NULL)
+		fclose(inp);
+	if (out != NULL)
+		fclose(out);
 	free_pnm_image_data(&img);
 	return code;
 }
