@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	if (img.max_value < args.brightness) {
 		fprintf(
 			stderr,
-			"Max brightness for this is image is %s.\n",
+			"Max brightness for this is image is %d.\n",
 			img.max_value
 		);
 		free_pnm_image_data(&img);
