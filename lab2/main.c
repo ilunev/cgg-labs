@@ -77,36 +77,39 @@ void print_usage(char *exe)
 
 int main(int argc, char **argv)
 {
+	FILE *f = NULL;
+	struct PNMImage img = pnm_image();
+	int status = 0;
+
+#define ERRQUIT status = 1; goto cleanup;
+
 	struct Args args;
 	if (parse_args(&args, argc, argv) != 0) {
 		print_usage(argv[0]);
-		return 1;
+		ERRQUIT
 	}
 
-	FILE *f = fopen(args.inp, "rb");
+	f = fopen(args.inp, "rb");
 	if (f == NULL) {
 		fprintf(
 			stderr,
 			"Failed to open %s for reading\n",
 			args.inp
 		);
-		return 1;
+		ERRQUIT
 	}
 
-	struct PNMImage img = pnm_image();
 	if (read_pnm_image(&img, f) != PNM_SUCCESS) {
 		fprintf(stderr, "Failed to read PNM image\n");
-		free_pnm_image_data(&img);
-		fclose(f);
-		return 1;
+		ERRQUIT
 	}
 
 	fclose(f);
+	f = NULL;
 
 	if (img.type != PNM_GRAYMAP) {
 		fprintf(stderr, "Only PNM P5 images are supported\n");
-		free_pnm_image_data(&img);
-		return 1;
+		ERRQUIT
 	}
 
 	if (img.max_value < args.brightness) {
@@ -115,8 +118,7 @@ int main(int argc, char **argv)
 			"Max brightness for this is image is %d.\n",
 			img.max_value
 		);
-		free_pnm_image_data(&img);
-		return 1;
+		ERRQUIT
 	}
 
 	f = fopen(args.out, "wb");
@@ -126,8 +128,7 @@ int main(int argc, char **argv)
 			"Failed to open %s for writing\n",
 			args.out
 		);
-		free_pnm_image_data(&img);
-		return 1;
+		ERRQUIT
 	}
 
 	struct DrawLineTask task = {
@@ -142,13 +143,15 @@ int main(int argc, char **argv)
 
 	if (write_pnm_image(&img, f) != PNM_SUCCESS) {
 		fprintf(stderr, "Failed to write PNM image\n");
-		free_pnm_image_data(&img);
-		fclose(f);
-		return 1;
+		ERRQUIT
 	}
 
-	fclose(f);
+#undef ERRQUIT
+
+cleanup:
+	if (f != NULL)
+		fclose(f);
 	free_pnm_image_data(&img);
 
-	return 0;
+	return status;
 }
