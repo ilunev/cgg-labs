@@ -3,9 +3,21 @@
 #include <math.h>
 
 
-double kline_y(double x, double x0, double y0, double k)
+void count_perp_k(struct Line *l)
 {
-	return k * (x - x0) + y0;
+	double dy = l->y1 - l->y0;
+	if (dy != 0.) {
+		double dx = l->x1 - l->x0;
+		l->_k = -dx / dy;
+	} else {
+		l->_k = HUGE_VAL;
+	}
+}
+
+
+double kline_x(double y, double x0, double y0, double k)
+{
+	return k == HUGE_VAL ? x0 : (y - y0) / k + x0;
 }
 
 
@@ -27,8 +39,11 @@ unsigned char to_stored(double b, unsigned char max_b, double gamma)
 }
 
 
-void plot(struct DrawLineTask *t, int x, int y, double intensity, char is_tr)
+void plot(struct DrawLineTask *t, int x, int y, double coef, char is_tr)
 {
+	if (x < 0 || x >= t->img->width || y < 0 || y >= t->img->height)
+		return;
+
 	if (is_tr) {
 		int tmp = x;
 		x = y;
@@ -37,63 +52,66 @@ void plot(struct DrawLineTask *t, int x, int y, double intensity, char is_tr)
 
 	struct PNMImage *img = t->img;
 
-	if (x < 0 || x >= img->width || y < 0 || y >= img->height)
-		return;
-
 	unsigned i = pnm_px_offset(img, y, x);
 
 	double frnt = to_visible(t->brightness, img->max_value, t->gamma);
 	double back = to_visible(img->data[i], img->max_value, t->gamma);
 
-	double mix = frnt * intensity + back * (1 - intensity);
+	double mix = frnt * coef + back * (1 - coef);
 
 	img->data[i] = to_stored(mix, img->max_value, t->gamma);
 }
 
 
-void stroke(struct DrawLineTask *t, int x, double y, char is_transposed)
+double cut_to_normal(double x)
 {
+	if (x > 1.)
+		x = 1.;
+	else if (x < 0.)
+		x = 0.;
+	return x;
+}
 
-	double up = y - t->width / 2;
-	double down = y + t->width / 2;
 
-	int up_px = floor(up + 0.5);
-	int down_px = (down + 0.5);
+double brightness_coef(
+	int x, int y,
+	double upper, double lower, double left, double right
+)
+{
+	double upper_impl = cut_to_normal(upper - (y - .5));
+	double lower_impl = cut_to_normal(y + .5 - lower);
+	double left_impl = cut_to_normal(left - .5 - (x - .5));
+	double right_impl = cut_to_normal(x + .5 - (right + .5));
+	double impl = upper_impl + lower_impl + left_impl + right_impl;
+	impl = cut_to_normal(impl);
+	return 1. - impl;
+}
 
-	double up_intensity = up_px - up + 0.5;
-	double down_intensity = down - down_px + 0.5;
 
-	int no_higher = up_px;
-	int no_lower = down_px;
+void stroke(struct DrawLineTask *t, int x, char is_tr)
+{
+	double line_y = math_y(t->line, x);
 
-	double k = t->line->_k;
-	if (k != HUGE_VAL) {
-		no_higher = kline_y(x, t->line->x0, t->line->y0, k) + 0.5;
-		no_lower = kline_y(x, t->line->x1, t->line->y1, k) + 0.5;
-		if (no_lower < no_higher) {
-			int tmp = no_lower;
-			no_lower = no_higher;
-			no_higher = tmp;
-		}
-		if (up_px > no_lower || down_px < no_higher)
-			return;
+	double upper = line_y - t->width / 2;
+	double lower = line_y + t->width / 2;
+
+	int y = floor(upper + .5);
+	int bound = floor(lower + .5);
+
+	for (; y <= bound; y++) {
+		double left = kline_x(
+			y, t->line->x0, t->line->y0, t->line->_k
+		);
+		double right = kline_x(
+			y, t->line->x1, t->line->y1, t->line->_k
+		);
+
+		double coef = brightness_coef(
+			x, y, upper, lower, left, right
+		);
+
+		plot(t, x, y, coef, is_tr);
 	}
-
-	double coef = t->width >= 1. ? 1. : t->width;
-
-	if (up_px == down_px) {
-		plot(t, x, up_px, coef, is_transposed);
-		return;
-	}
-
-	if (up_px >= no_higher)
-		plot(t, x, up_px, up_intensity * coef, is_transposed);
-	if (down_px <= no_lower)
-		plot(t, x, down_px, down_intensity * coef, is_transposed);
-
-	for (int y_px = up_px + 1; y_px < down_px; y_px++)
-		if (y_px >= no_higher && y_px <= no_lower)
-			plot(t, x, y_px, coef, is_transposed);
 }
 
 
@@ -123,6 +141,7 @@ void draw_line(struct DrawLineTask *t)
 {
 	struct Line *line = t->line;
 	char is_transposed = 0;
+
 	if (fabs(line->x1 - line->x0) < fabs(line->y1 - line->y0)) {
 		is_transposed = 1;
 		transpose(line);
@@ -132,24 +151,13 @@ void draw_line(struct DrawLineTask *t)
 		flip(line);
 	}
 
-	int x0, x1;
+	count_perp_k(t->line);
 
-	double dy = line->y1 - line->y0;
-	double dx = line->x1 - line->x0;
-	if (dy != 0) {
-		line->_k = -dx / dy;
-		x0 = line->x0 - t->width / 2;
-		x1 = line->x1 + t->width / 2;
-	} else {
-		line->_k = HUGE_VAL;
-		x0 = line->x0;
-		x1 = line->x1;
-		if (dx == 0)
-			return stroke(t, x0, line->y0, is_transposed);
-	}
+	int x = floor(t->line->x0 - t->width / 2 + .5);
+	int x1 = floor(t->line->x1 + t->width / 2 + .5);
 
-	for (int x = x0; x <= x1; x++)
-		stroke(t, x, math_y(line, x), is_transposed);
+	for (; x <= x1; x++)
+		stroke(t, x, is_transposed);
 
 	if (is_transposed)
 		transpose(line);
