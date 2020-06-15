@@ -10,10 +10,10 @@ struct Line line_init(double x0, double y0, double x1, double y1, double w)
 {
 	struct Line l;
 
-	double dy = fabs(y1 - y0);
-	double dx = fabs(x1 - x0);
+	double dy = y1 - y0;
+	double dx = x1 - x0;
 
-	if (dy > dx) {
+	if (fabs(dy) > fabs(dx)) {
 		l.is_transposed = 1;
 		SWAP(dx, dy);
 		SWAP(x0, y0);
@@ -25,6 +25,7 @@ struct Line line_init(double x0, double y0, double x1, double y1, double w)
 	if (x0 > x1) {
 		SWAP(x0, x1);
 		SWAP(y0, y1);
+		dx = -dx;
 	}
 
 	l.x0 = x0;
@@ -114,7 +115,7 @@ void plot(struct DrawLineTask *t, int x_px, int y_px, double coef)
 
 double brightness_coef(struct Line *l, int x_px, int y_px)
 {
-	int match_count = 0.;
+	int match_count = 0;
 
 	for (double x = x_px - .5 + .05; x < x_px + .5; x += .1) {
 		double line_y = math_y(l, x);
@@ -127,6 +128,7 @@ double brightness_coef(struct Line *l, int x_px, int y_px)
 
 			double left = kline_x(y, l->x0, l->y0, l->perp_k);
 			double right = kline_x(y, l->x1, l->y1, l->perp_k);
+
 			if (x < left || x > right)
 				continue;
 
