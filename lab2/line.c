@@ -10,12 +10,8 @@ struct Line line_init(double x0, double y0, double x1, double y1, double w)
 {
 	struct Line l;
 
-	double dy = y1 - y0;
-	double dx = x1 - x0;
-
-	if (fabs(dy) > fabs(dx)) {
+	if (fabs(y1 - y0) > fabs(x1 - x0)) {
 		l.is_transposed = 1;
-		SWAP(dx, dy);
 		SWAP(x0, y0);
 		SWAP(x1, y1);
 	} else {
@@ -25,8 +21,10 @@ struct Line line_init(double x0, double y0, double x1, double y1, double w)
 	if (x0 > x1) {
 		SWAP(x0, x1);
 		SWAP(y0, y1);
-		dx = -dx;
 	}
+
+	double dx = x1 - x0;
+	double dy = y1 - y0;
 
 	l.x0 = x0 - .5;
 	l.y0 = y0 - .5;
