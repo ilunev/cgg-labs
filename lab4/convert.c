@@ -88,29 +88,34 @@ void rgb_hsv(double r, double g, double b, double *H, double *S, double *V)
 	else
 		*H = (4. + (r - g) / c) / 6.;
 
+	if (*H < 0)
+		*H += 1;
+
 	*S = *V == 0. ? 0. : c / *V;
 
 }
 
 
-void rgb_hsl(double r, double g, double b, double *H, double *S, double *V)
+void rgb_hsl(double r, double g, double b, double *H, double *S, double *L)
 {
 	double x_max = MAX(MAX(r, g), b);
 	double x_min = MIN(MIN(r, g), b);
 	double c = x_max - x_min;
 	
-	*V = x_max;
-
 	if (c == 0.)
 		*H = 0.;
-	else if (*V == r)
+	else if (x_max == r)
 		*H = ((g - b) / c) / 6.;
-	else if (*V == g)
+	else if (x_max == g)
 		*H = (2. + (b - r) / c) / 6.;
 	else
 		*H = (4. + (r - g) / c) / 6.;
 
-	*S = *V == 0. ? 0. : c / *V;
+	if (*H < 0)
+		*H += 1.;
+
+	*S = x_max == 0. ? 0. : c / (1. - fabs(x_max + x_min - 1.));
+	*L = (x_max + x_min) / 2.;
 }
 
 
