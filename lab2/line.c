@@ -28,10 +28,10 @@ struct Line line_init(double x0, double y0, double x1, double y1, double w)
 		dx = -dx;
 	}
 
-	l.x0 = x0;
-	l.y0 = y0;
-	l.x1 = x1;
-	l.y1 = y1;
+	l.x0 = x0 - .5;
+	l.y0 = y0 - .5;
+	l.x1 = x1 - .5;
+	l.y1 = y1 - .5;
 	l.width = w;
 
 	l.k = dy / dx;
