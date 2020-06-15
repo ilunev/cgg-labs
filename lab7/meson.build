@@ -1,4 +1,4 @@
-project('cgg-lab2', 'c')
+project('cgg-lab7', 'c')
 executable(
   'lab7.exe',
   'main.c',
