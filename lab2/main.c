@@ -16,7 +16,10 @@ struct Args {
 	char *out;
 	unsigned char brightness;
 	double width;
-	struct Line line;
+	double x0;
+	double y0;
+	double x1;
+	double y1;
 	double gamma;
 };
 
@@ -50,19 +53,16 @@ int parse_args(struct Args *args, int argc, char **argv)
 		return 1;
 
 	int err = 0;
-	err += parse_double(&args->line.x0, argv[5]);
-	err += parse_double(&args->line.y0, argv[6]);
-	err += parse_double(&args->line.x1, argv[7]);
-	err += parse_double(&args->line.y1, argv[8]);
+	err += parse_double(&args->x0, argv[5]);
+	err += parse_double(&args->y0, argv[6]);
+	err += parse_double(&args->x1, argv[7]);
+	err += parse_double(&args->y1, argv[8]);
 	if (err)
 		return 1;
 
 	if (argc < 10) {
-		args->gamma = 2.2;
-		return 0;
-	}
-
-	if (parse_double(&args->gamma, argv[9]) != 0 || args->gamma <= 0)
+		args->gamma = 0.;
+	} else if (parse_double(&args->gamma, argv[9]) != 0 || args->gamma <= 0)
 		return 1;
 
 	return 0;
@@ -131,10 +131,11 @@ int main(int argc, char **argv)
 		ERRQUIT
 	}
 
+	struct Line line = line_init(args.x0, args.y0, args.x1, args.y1, args.width);
+
 	struct DrawLineTask task = {
 		&img,
-		&args.line,
-		args.width,
+		&line,
 		args.brightness,
 		args.gamma
 	};

@@ -8,13 +8,18 @@ struct Line {
 	double y0;
 	double x1;
 	double y1;
-	double _k;
+	double width;
+	double k;
+	double perp_k;
+	double half_vert_w;
+	char is_transposed;
 };
+
+struct Line line_init(double x0, double y0, double x1, double y1, double w);
 
 struct DrawLineTask {
 	struct PNMImage *img;
 	struct Line *line;
-	double width;
 	unsigned char brightness;
 	double gamma;
 };
