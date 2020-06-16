@@ -25,8 +25,8 @@ smin = min( B, D, E, F, H )
 smax = max( B, D, E, F, H )
 
 Минимум и максимум для окрестности:
-nmin = min( smin, A, C, G, I )
-nmax = max( smax, A, C, G, I )
+nmin = smin + min( smin, A, C, G, I )
+nmax = smax + max( smax, A, C, G, I )
 
 Вес ядра:
 w = - sqrt( min( nmin, 2 - nmax ) / nmax ) / ( 8 - 3 * sharpen )
