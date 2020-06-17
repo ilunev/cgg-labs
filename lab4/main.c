@@ -153,8 +153,8 @@ int read_count_3(struct PNMImage *img, struct Args *args)
 	struct PNMImage t = pnm_image();
 	char *filename = malloc(strlen(args->inp) + 3);
 
-	for (int i = 1; i <= 3; ++i) {
-		construct_filename(args->inp, filename, i);
+	for (int i = 0; i < 3; ++i) {
+		construct_filename(args->inp, filename, i + 1);
 
 		FILE *f = fopen(filename, "rb");
 		if (!f) {
@@ -230,7 +230,7 @@ int write_count_3(struct PNMImage *img, struct Args *args)
 
 	char *filename = malloc(strlen(args->out) + 3);
 
-	for (int i = 1; i <= 3; ++i) {
+	for (int i = 0; i < 3; ++i) {
 		for (unsigned h = 0; h < t.height; ++h)
 			for (unsigned w = 0; w < t.height; ++w) {
 				unsigned img_idx = pnm_px_offset(img, h, w) + i;
@@ -238,7 +238,7 @@ int write_count_3(struct PNMImage *img, struct Args *args)
 				t.data[t_idx] = img->data[img_idx];
 			}
 
-		construct_filename(args->out, filename, i);
+		construct_filename(args->out, filename, i + 1);
 
 		FILE *f = fopen(filename, "wb");
 		if (!f) {
