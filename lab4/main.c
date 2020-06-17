@@ -186,7 +186,7 @@ int read_count_3(struct PNMImage *img, struct Args *args)
 		}
 
 		for (unsigned h = 0; h < t.height; ++h)
-			for (unsigned w = 0; w < t.height; ++w) {
+			for (unsigned w = 0; w < t.width; ++w) {
 				unsigned img_idx = pnm_px_offset(img, h, w) + i;
 				unsigned t_idx = pnm_px_offset(&t, h, w);
 				img->data[img_idx] = t.data[t_idx];
@@ -232,7 +232,7 @@ int write_count_3(struct PNMImage *img, struct Args *args)
 
 	for (int i = 0; i < 3; ++i) {
 		for (unsigned h = 0; h < t.height; ++h)
-			for (unsigned w = 0; w < t.height; ++w) {
+			for (unsigned w = 0; w < t.width; ++w) {
 				unsigned img_idx = pnm_px_offset(img, h, w) + i;
 				unsigned t_idx = pnm_px_offset(&t, h, w);
 				t.data[t_idx] = img->data[img_idx];
